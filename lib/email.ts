@@ -30,13 +30,13 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 
 /**
  * Send an email using Resend
- * Falls back to console logging in development if Resend is not configured
+ * Falls back to console logging if Resend is not configured
  */
 export async function sendEmail(options: EmailOptions): Promise<void> {
   const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
-  // If Resend is configured, use it
-  if (resend && process.env.NODE_ENV === 'production') {
+  // If Resend is configured, use it (regardless of environment)
+  if (resend) {
     try {
       await resend.emails.send({
         from,
@@ -48,15 +48,16 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
       console.log(`✅ Email sent to ${options.to}`);
     } catch (error) {
       console.error('❌ Failed to send email:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       throw error;
     }
   } else {
-    // Development mode or Resend not configured - log to console
-    console.log('📧 Email would be sent (development mode):');
+    // Resend not configured - log to console
+    console.log('⚠️ RESEND_API_KEY not configured - email not sent');
+    console.log('📧 Email details:');
     console.log('From:', from);
     console.log('To:', options.to);
     console.log('Subject:', options.subject);
-    console.log('HTML:', options.html);
     console.log('---');
   }
 }

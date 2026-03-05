@@ -69,6 +69,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Please verify your email before logging in');
         }
 
+        // Check if password exists (OAuth users might not have password)
+        if (!user.password) {
+          throw new Error('Invalid email or password');
+        }
+
         // Verify password
         const isPasswordValid = await bcrypt.compare(
           credentials.password,

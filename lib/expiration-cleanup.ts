@@ -5,6 +5,7 @@
 
 import prisma from './db';
 import { invalidateLinkCache } from './cache';
+import { getRedisClient } from './redis';
 
 const BATCH_SIZE = 100;
 
@@ -75,9 +76,10 @@ export async function cleanupExpiredLinks(): Promise<CleanupResult> {
       batchCount++;
 
       // Invalidate caches for deleted links
+      const redis = getRedisClient();
       for (const link of batch) {
         try {
-          await invalidateLinkCache(link.shortCode);
+          await invalidateLinkCache(link.shortCode, redis);
         } catch (error) {
           // Log but don't fail the cleanup
           console.error(
@@ -171,6 +173,9 @@ export async function sendExpirationWarnings(): Promise<CleanupResult> {
     // Send warning emails asynchronously (fire-and-forget)
     for (const link of expiringLinks) {
       if (link.user && link.expiresAt) {
+        const user = link.user; // Capture user to avoid null check issues in async closure
+        const expiresAt = link.expiresAt;
+        
         // Fire-and-forget: don't await, let it run in background
         (async () => {
           try {
@@ -178,15 +183,15 @@ export async function sendExpirationWarnings(): Promise<CleanupResult> {
             const { sendExpirationWarningEmail } = await import('./email');
             
             await sendExpirationWarningEmail(
-              link.user.email,
-              link.user.name || 'User',
+              user.email,
+              user.name || 'User',
               link.shortCode,
               link.originalUrl,
-              link.expiresAt
+              expiresAt
             );
 
             emailsSent++;
-            console.log(`Sent warning email for link ${link.shortCode} to ${link.user.email}`);
+            console.log(`Sent warning email for link ${link.shortCode} to ${user.email}`);
           } catch (error) {
             // Log but don't fail the entire process
             console.error(

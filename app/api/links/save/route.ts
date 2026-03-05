@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
 import { invalidateLinkCache } from '@/lib/cache';
+import { getRedisClient } from '@/lib/redis';
 
 /**
  * POST /api/links/save
@@ -86,7 +87,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Invalidate cache
-    await invalidateLinkCache(shortCode);
+    const redis = getRedisClient();
+    await invalidateLinkCache(shortCode, redis);
 
     // Return success response
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';

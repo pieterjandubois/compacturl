@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateQRCode } from '@/lib/qr-generator';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/qr
  * Generate QR code for a URL
@@ -44,7 +46,7 @@ export async function GET(request: NextRequest) {
     const qrBuffer = await generateQRCode(url);
 
     // Return PNG image with appropriate headers
-    return new NextResponse(qrBuffer, {
+    return new NextResponse(Buffer.from(qrBuffer), {
       status: 200,
       headers: {
         'Content-Type': 'image/png',

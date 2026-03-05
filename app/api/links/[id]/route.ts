@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/db';
 import { invalidateLinkCache } from '@/lib/cache';
+import { getRedisClient } from '@/lib/redis';
 
 /**
  * DELETE /api/links/[id]
@@ -69,7 +70,8 @@ export async function DELETE(
     });
 
     // Invalidate cache
-    await invalidateLinkCache(link.shortCode);
+    const redis = getRedisClient();
+    await invalidateLinkCache(link.shortCode, redis);
 
     // Return 204 No Content
     return new NextResponse(null, { status: 204 });

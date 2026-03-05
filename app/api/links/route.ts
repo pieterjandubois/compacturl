@@ -152,8 +152,10 @@ export async function DELETE(request: NextRequest) {
 
     // Invalidate all caches
     const { invalidateLinkCache } = await import('@/lib/cache');
+    const { getRedisClient } = await import('@/lib/redis');
+    const redis = getRedisClient();
     for (const link of links) {
-      await invalidateLinkCache(link.shortCode);
+      await invalidateLinkCache(link.shortCode, redis);
     }
 
     return NextResponse.json({

@@ -25,8 +25,23 @@ interface EmailOptions {
   text?: string;
 }
 
-// Initialize Resend client
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+// Lazy initialization of Resend client
+let resendClient: Resend | null = null;
+
+function getResendClient(): Resend | null {
+  if (!process.env.RESEND_API_KEY) {
+    console.log('⚠️ RESEND_API_KEY not found in environment variables');
+    return null;
+  }
+  
+  if (!resendClient) {
+    console.log('🔧 Initializing Resend client...');
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+    console.log('✅ Resend client initialized');
+  }
+  
+  return resendClient;
+}
 
 /**
  * Send an email using Resend
@@ -37,10 +52,15 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
 
   console.log('📧 Attempting to send email...');
   console.log('- RESEND_API_KEY configured:', !!process.env.RESEND_API_KEY);
-  console.log('- Resend client initialized:', !!resend);
+  console.log('- RESEND_API_KEY length:', process.env.RESEND_API_KEY?.length || 0);
+  console.log('- RESEND_API_KEY starts with:', process.env.RESEND_API_KEY?.substring(0, 5) || 'N/A');
   console.log('- From:', from);
   console.log('- To:', options.to);
   console.log('- Subject:', options.subject);
+
+  const resend = getResendClient();
+  
+  console.log('- Resend client initialized:', !!resend);
 
   // If Resend is configured, use it (regardless of environment)
   if (resend) {

@@ -1,13 +1,5 @@
 {
-  "buildCommand": "prisma generate && next build",
+  "buildCommand": "prisma generate && prisma migrate deploy && next build",
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "NEXTAUTH_URL": "@nextauth_url",
-    "RESEND_API_KEY": "@resend_api_key",
-    "EMAIL_FROM": "@email_from",
-    "REDIS_URL": "@redis_url"
-  }
+  "regions": ["iad1"]
 }

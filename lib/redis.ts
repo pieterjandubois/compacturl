@@ -29,12 +29,14 @@ function retryStrategy(times: number): number | void {
   
   if (times > maxRetries) {
     // Stop retrying after max attempts
+    // eslint-disable-next-line no-console
     console.error(`Redis connection failed after ${maxRetries} attempts`);
     return undefined; // Stop retrying
   }
   
   // Exponential backoff: min(2^times * 100, maxDelay)
   const delay = Math.min(Math.pow(2, times) * 100, maxDelay);
+  // eslint-disable-next-line no-console
   console.log(`Redis reconnection attempt ${times}, waiting ${delay}ms`);
   
   return delay;
@@ -104,25 +106,30 @@ export function getRedisClient(): Redis | null {
   redisClient = new Redis(redisUrl, config);
   
   // Error event handler
-  redisClient.on('error', (error) => {
-    console.error('Redis client error:', error.message);
+  redisClient.on('error', (err) => {
+    // eslint-disable-next-line no-console
+    console.error('Redis client error:', err.message);
     // Don't throw - allow graceful degradation
   });
   
   // Connection event handlers for logging
   redisClient.on('connect', () => {
+    // eslint-disable-next-line no-console
     console.log('Redis client connecting...');
   });
   
   redisClient.on('ready', () => {
+    // eslint-disable-next-line no-console
     console.log('Redis client ready');
   });
   
   redisClient.on('close', () => {
+    // eslint-disable-next-line no-console
     console.log('Redis connection closed');
   });
   
   redisClient.on('reconnecting', (delay: number) => {
+    // eslint-disable-next-line no-console
     console.log(`Redis client reconnecting in ${delay}ms`);
   });
   
@@ -137,7 +144,7 @@ export async function closeRedisClient(): Promise<void> {
   if (redisClient) {
     try {
       await redisClient.quit();
-    } catch (error) {
+    } catch (err) {
       // Force disconnect if quit fails
       redisClient.disconnect();
     } finally {

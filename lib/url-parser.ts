@@ -60,7 +60,7 @@ export function parseUrl(url: string): ParseResult {
         hash: urlObj.hash.replace('#', ''),
       },
     }
-  } catch (error) {
+  } catch {
     // Check if it's a URL with missing domain (e.g., "https://")
     if (url.match(/^https?:\/\/\s*$/)) {
       return {

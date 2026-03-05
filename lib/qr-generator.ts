@@ -48,7 +48,7 @@ export async function generateQRCode(
   // Basic URL format validation
   try {
     new URL(trimmedUrl)
-  } catch (error) {
+  } catch {
     throw new Error(`Invalid URL format: ${trimmedUrl}`)
   }
 

@@ -143,7 +143,7 @@ export function sanitizeShortCode(code: string, maxLength: number = 10): string 
  */
 export async function generateSmartShortCode(
   url: string,
-  prisma: any
+  prisma: { link: { findUnique: (args: { where: { shortCode: string } }) => Promise<unknown> } }
 ): Promise<{ shortCode: string; isUnique: boolean; attemptNumber: number }> {
   // Parse the URL
   const parsedUrl = new URL(url);

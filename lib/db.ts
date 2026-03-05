@@ -55,7 +55,7 @@ if (process.env.NODE_ENV !== 'production') {
 // Connection pool monitoring (optional, for debugging)
 if (process.env.NODE_ENV === 'development') {
   // Log query events to monitor connection usage
-  prisma.$on('query' as never, (e: any) => {
+  prisma.$on('query' as never, (e: { query: string; duration: number }) => {
     if (process.env.DEBUG_DB === 'true') {
       console.log('Query: ' + e.query);
       console.log('Duration: ' + e.duration + 'ms');
@@ -63,12 +63,12 @@ if (process.env.NODE_ENV === 'development') {
   });
 
   // Log errors
-  prisma.$on('error' as never, (e: any) => {
+  prisma.$on('error' as never, (e: { message: string }) => {
     console.error('Database error:', e);
   });
 
   // Log warnings
-  prisma.$on('warn' as never, (e: any) => {
+  prisma.$on('warn' as never, (e: { message: string }) => {
     console.warn('Database warning:', e);
   });
 }

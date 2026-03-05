@@ -49,8 +49,8 @@ export default function RegisterPage() {
       }
 
       setSuccess(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setLoading(false)
     }
@@ -93,7 +93,7 @@ export default function RegisterPage() {
                 Registration Successful!
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                We've sent a verification email to <strong>{email}</strong>. Please check your inbox
+                We&apos;ve sent a verification email to <strong>{email}</strong>. Please check your inbox
                 and click the verification link to activate your account.
               </p>
               <Link

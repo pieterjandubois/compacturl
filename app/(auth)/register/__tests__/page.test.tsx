@@ -234,7 +234,7 @@ describe('RegisterPage', () => {
 
   describe('Google OAuth', () => {
     it('should call signIn with google provider when Google button is clicked', async () => {
-      mockSignIn.mockResolvedValueOnce(undefined as any)
+      mockSignIn.mockResolvedValueOnce(undefined as unknown as ReturnType<typeof signIn>)
 
       render(<RegisterPage />)
 

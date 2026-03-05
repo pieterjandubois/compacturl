@@ -29,7 +29,7 @@ export default function LoginPage() {
       } else {
         router.push('/dashboard')
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred. Please try again.')
     } finally {
       setLoading(false)
@@ -42,7 +42,7 @@ export default function LoginPage() {
 
     try {
       await signIn('google', { callbackUrl: '/dashboard' })
-    } catch (err) {
+    } catch {
       setError('Failed to sign in with Google')
       setLoading(false)
     }
@@ -156,7 +156,7 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link
               href="/register"
               className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"

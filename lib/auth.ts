@@ -106,22 +106,49 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       // Add user ID to token on sign in
       if (user) {
         token.id = user.id;
-        console.log('JWT callback - Added user ID to token:', user.id);
+        token.emailVerified = user.emailVerified;
+        console.log('JWT callback - Added user data to token:', {
+          userId: user.id,
+          emailVerified: user.emailVerified
+        });
       }
+      
+      // Refresh user data from database on update trigger or periodically
+      // This ensures emailVerified status is always current
+      if (trigger === 'update' || !token.emailVerified) {
+        console.log('JWT callback - Refreshing user data from database for:', token.id);
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { emailVerified: true, email: true, name: true }
+        });
+        
+        if (dbUser) {
+          token.emailVerified = dbUser.emailVerified;
+          token.email = dbUser.email;
+          token.name = dbUser.name;
+          console.log('JWT callback - Updated token with fresh data:', {
+            emailVerified: token.emailVerified,
+            email: token.email
+          });
+        }
+      }
+      
       return token;
     },
     
     async session({ session, token }) {
-      // Add user ID to session
+      // Add user ID and emailVerified to session
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.emailVerified = token.emailVerified as Date | null;
         console.log('Session callback - Session created for user:', {
           userId: session.user.id,
-          email: session.user.email
+          email: session.user.email,
+          emailVerified: session.user.emailVerified
         });
       }
       return session;

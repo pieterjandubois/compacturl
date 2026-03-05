@@ -5,6 +5,37 @@ import prisma from '@/lib/db';
 import { Prisma } from '@prisma/client';
 
 /**
+ * Helper function to get and verify user
+ */
+async function getVerifiedUser(email: string) {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      email: true,
+      emailVerified: true,
+    }
+  });
+
+  if (!user) {
+    return { error: { code: 'USER_NOT_FOUND', message: 'User not found' }, status: 404 };
+  }
+
+  if (!user.emailVerified) {
+    console.log('❌ Email not verified for user:', user.email);
+    return { 
+      error: { 
+        code: 'EMAIL_NOT_VERIFIED', 
+        message: 'Please verify your email address. Check your inbox for the verification link.' 
+      }, 
+      status: 403 
+    };
+  }
+
+  return { user };
+}
+
+/**
  * GET /api/links
  * Get user's saved links with sorting
  * Requirements: 5.4, 5.9
@@ -30,17 +61,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: { code: 'USER_NOT_FOUND', message: 'User not found' } },
-        { status: 404 }
-      );
+    // Get and verify user
+    const result = await getVerifiedUser(session.user.email);
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
+    const { user } = result;
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -127,17 +153,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: { code: 'USER_NOT_FOUND', message: 'User not found' } },
-        { status: 404 }
-      );
+    // Get and verify user
+    const result = await getVerifiedUser(session.user.email);
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
+    const { user } = result;
 
     // Fetch all user's saved links (to invalidate caches)
     const links = await prisma.link.findMany({

@@ -73,6 +73,8 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
   if (resend) {
     try {
       console.log('🔄 Calling Resend API...');
+      console.log('Request timestamp:', new Date().toISOString());
+      
       const result = await resend.emails.send({
         from,
         to: options.to,
@@ -81,7 +83,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
         text: options.text,
       });
       
-      console.log('📦 Resend API response received');
+      console.log('📦 Resend API response received at:', new Date().toISOString());
       console.log('Full response:', JSON.stringify(result, null, 2));
       
       // Check if there's an error in the response
@@ -89,6 +91,19 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
         console.error('❌ Resend API returned an error:');
         console.error('Error name:', result.error.name);
         console.error('Error message:', result.error.message);
+        
+        // Check for rate limiting
+        if (result.error.message?.includes('rate limit') || result.error.message?.includes('too many')) {
+          console.error('🚫 RATE LIMIT DETECTED - Resend is throttling requests');
+          throw new Error(`Resend rate limit exceeded: ${result.error.message}`);
+        }
+        
+        // Check for sandbox restrictions
+        if (result.error.message?.includes('testing emails') || result.error.message?.includes('verify a domain')) {
+          console.error('🔒 SANDBOX RESTRICTION - Can only send to verified email');
+          throw new Error(`Resend sandbox restriction: ${result.error.message}`);
+        }
+        
         throw new Error(`Resend API error: ${result.error.message}`);
       }
       
@@ -193,12 +208,18 @@ export async function sendVerificationEmail(
 
   const { html, text } = generateVerificationEmail(name, verificationUrl);
 
+  // Add timestamp to help prevent caching issues
+  const timestamp = new Date().toISOString();
+  console.log('📧 Sending verification email at:', timestamp);
+
   await sendEmail({
     to: email,
     subject: 'Verify your CompactURL account',
     html,
     text,
   });
+  
+  console.log('✅ Verification email sent at:', timestamp);
 }
 
 /**

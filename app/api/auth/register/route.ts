@@ -101,6 +101,13 @@ export async function POST(request: NextRequest) {
 
     console.log('User created:', user.id);
 
+    // Delete any existing verification tokens for this email
+    // This ensures we don't have stale tokens and helps with re-registration scenarios
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: email },
+    });
+    console.log('Cleared any existing verification tokens for:', email);
+
     // Create verification token
     const tokenRecord = await prisma.verificationToken.create({
       data: {
@@ -112,25 +119,31 @@ export async function POST(request: NextRequest) {
 
     console.log('Verification token created:', tokenRecord.token);
 
-    // Send verification email asynchronously (fire-and-forget)
-    console.log('🚀 Initiating email send...');
-    console.log('Email params:', { email, name, tokenLength: verificationToken.length });
+    // Send verification email
+    // In serverless environments, we need to await the email send to ensure it completes
+    // before the function terminates
+    console.log('🚀 Sending verification email...');
+    console.log('Email params:', { 
+      email, 
+      name, 
+      tokenLength: verificationToken.length,
+      timestamp: new Date().toISOString()
+    });
     
-    // Call the function and handle the promise
-    const emailPromise = sendVerificationEmail(email, name, verificationToken);
-    
-    emailPromise
-      .then(() => {
-        console.log('✅ Email send promise resolved successfully');
-      })
-      .catch((emailError) => {
-        console.error('❌ Email send promise rejected with error:', emailError);
-        console.error('Error type:', emailError?.constructor?.name);
-        console.error('Error message:', emailError?.message);
-        console.error('Error stack:', emailError?.stack);
-      });
-
-    console.log('📬 Email send initiated (promise created, not awaited)');
+    try {
+      await sendVerificationEmail(email, name, verificationToken);
+      console.log('✅ Verification email sent successfully');
+    } catch (emailError) {
+      // Log the error but don't fail the registration
+      // User can request a new verification email later
+      console.error('❌ Failed to send verification email:', emailError);
+      console.error('Error type:', emailError?.constructor?.name);
+      console.error('Error message:', emailError?.message);
+      console.error('Error stack:', emailError?.stack);
+      
+      // Still return success - user is registered, just email failed
+      console.warn('⚠️ User registered but email failed to send');
+    }
 
     return NextResponse.json(
       {

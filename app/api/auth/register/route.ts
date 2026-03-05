@@ -114,17 +114,23 @@ export async function POST(request: NextRequest) {
 
     // Send verification email asynchronously (fire-and-forget)
     console.log('🚀 Initiating email send...');
-    sendVerificationEmail(email, name, verificationToken)
+    console.log('Email params:', { email, name, tokenLength: verificationToken.length });
+    
+    // Call the function and handle the promise
+    const emailPromise = sendVerificationEmail(email, name, verificationToken);
+    
+    emailPromise
       .then(() => {
-        console.log('✅ Email send completed successfully');
+        console.log('✅ Email send promise resolved successfully');
       })
       .catch((emailError) => {
-        console.error('❌ Failed to send verification email:', emailError);
-        console.error('Email error stack:', emailError.stack);
-        // Error is logged but doesn't affect registration response
+        console.error('❌ Email send promise rejected with error:', emailError);
+        console.error('Error type:', emailError?.constructor?.name);
+        console.error('Error message:', emailError?.message);
+        console.error('Error stack:', emailError?.stack);
       });
 
-    console.log('📬 Email send initiated (async)');
+    console.log('📬 Email send initiated (promise created, not awaited)');
 
     return NextResponse.json(
       {

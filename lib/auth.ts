@@ -110,6 +110,7 @@ export const authOptions: NextAuthOptions = {
       // Add user ID to token on sign in
       if (user) {
         token.id = user.id;
+        console.log('JWT callback - Added user ID to token:', user.id);
       }
       return token;
     },
@@ -118,6 +119,10 @@ export const authOptions: NextAuthOptions = {
       // Add user ID to session
       if (session.user) {
         session.user.id = token.id as string;
+        console.log('Session callback - Session created for user:', {
+          userId: session.user.id,
+          email: session.user.email
+        });
       }
       return session;
     },

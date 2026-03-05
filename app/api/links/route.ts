@@ -14,7 +14,16 @@ export async function GET(request: NextRequest) {
     // Verify authentication
     const session = await getServerSession(authOptions);
 
+    console.log('Links API - Session check:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      hasEmail: !!session?.user?.email,
+      email: session?.user?.email,
+      userId: (session?.user as any)?.id
+    });
+
     if (!session || !session.user?.email) {
+      console.log('❌ No session or email - returning 401');
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }

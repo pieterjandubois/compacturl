@@ -53,18 +53,26 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
   console.log('📧 Attempting to send email...');
   console.log('- RESEND_API_KEY configured:', !!process.env.RESEND_API_KEY);
   console.log('- RESEND_API_KEY length:', process.env.RESEND_API_KEY?.length || 0);
-  console.log('- RESEND_API_KEY starts with:', process.env.RESEND_API_KEY?.substring(0, 5) || 'N/A');
-  console.log('- From:', from);
-  console.log('- To:', options.to);
+  console.log('- RESEND_API_KEY format:', process.env.RESEND_API_KEY?.substring(0, 7) || 'N/A');
+  console.log('- EMAIL_FROM configured:', !!process.env.EMAIL_FROM);
+  console.log('- From address:', from);
+  console.log('- To address:', options.to);
   console.log('- Subject:', options.subject);
 
   const resend = getResendClient();
   
   console.log('- Resend client initialized:', !!resend);
+  
+  // Validate from address format
+  if (!from.includes('@')) {
+    console.error('❌ Invalid EMAIL_FROM format:', from);
+    throw new Error('EMAIL_FROM must be a valid email address');
+  }
 
   // If Resend is configured, use it (regardless of environment)
   if (resend) {
     try {
+      console.log('🔄 Calling Resend API...');
       const result = await resend.emails.send({
         from,
         to: options.to,
@@ -72,20 +80,37 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
         html: options.html,
         text: options.text,
       });
-      console.log(`✅ Email sent successfully to ${options.to}`);
-      console.log('Resend response:', JSON.stringify(result, null, 2));
       
+      console.log('📦 Resend API response received');
+      console.log('Full response:', JSON.stringify(result, null, 2));
+      
+      // Check if there's an error in the response
+      if (result.error) {
+        console.error('❌ Resend API returned an error:');
+        console.error('Error name:', result.error.name);
+        console.error('Error message:', result.error.message);
+        throw new Error(`Resend API error: ${result.error.message}`);
+      }
+      
+      // Check if we got a successful response with an ID
       if (result.data?.id) {
+        console.log('✅ Email sent successfully to', options.to);
         console.log('📧 Email ID:', result.data.id);
         console.log('🔍 Check email status at: https://resend.com/emails/' + result.data.id);
-      }
-      
-      if (result.error) {
-        console.error('⚠️ Resend returned an error:', result.error);
+      } else {
+        console.warn('⚠️ Unexpected response format from Resend:');
+        console.warn('Response:', JSON.stringify(result, null, 2));
       }
     } catch (error) {
-      console.error('❌ Failed to send email:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
+      console.error('❌ Failed to send email via Resend');
+      console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('Error stack:', error instanceof Error ? error.stack : 'N/A');
+      
+      if (error && typeof error === 'object') {
+        console.error('Full error object:', JSON.stringify(error, null, 2));
+      }
+      
       throw error;
     }
   } else {

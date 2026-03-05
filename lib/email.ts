@@ -35,17 +35,25 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 export async function sendEmail(options: EmailOptions): Promise<void> {
   const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
+  console.log('📧 Attempting to send email...');
+  console.log('- RESEND_API_KEY configured:', !!process.env.RESEND_API_KEY);
+  console.log('- Resend client initialized:', !!resend);
+  console.log('- From:', from);
+  console.log('- To:', options.to);
+  console.log('- Subject:', options.subject);
+
   // If Resend is configured, use it (regardless of environment)
   if (resend) {
     try {
-      await resend.emails.send({
+      const result = await resend.emails.send({
         from,
         to: options.to,
         subject: options.subject,
         html: options.html,
         text: options.text,
       });
-      console.log(`✅ Email sent to ${options.to}`);
+      console.log(`✅ Email sent successfully to ${options.to}`);
+      console.log('Email ID:', result.data?.id);
     } catch (error) {
       console.error('❌ Failed to send email:', error);
       console.error('Error details:', JSON.stringify(error, null, 2));

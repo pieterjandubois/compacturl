@@ -113,11 +113,18 @@ export async function POST(request: NextRequest) {
     console.log('Verification token created:', tokenRecord.token);
 
     // Send verification email asynchronously (fire-and-forget)
-    // Don't await - let it run in the background
-    sendVerificationEmail(email, name, verificationToken).catch((emailError) => {
-      console.error('Failed to send verification email:', emailError);
-      // Error is logged but doesn't affect registration response
-    });
+    console.log('🚀 Initiating email send...');
+    sendVerificationEmail(email, name, verificationToken)
+      .then(() => {
+        console.log('✅ Email send completed successfully');
+      })
+      .catch((emailError) => {
+        console.error('❌ Failed to send verification email:', emailError);
+        console.error('Email error stack:', emailError.stack);
+        // Error is logged but doesn't affect registration response
+      });
+
+    console.log('📬 Email send initiated (async)');
 
     return NextResponse.json(
       {

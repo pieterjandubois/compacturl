@@ -64,15 +64,9 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid email or password');
         }
 
-        // TEMPORARY: Skip email verification check for testing
-        // TODO: Re-enable once email service is configured
-        // if (!user.emailVerified) {
-        //   throw new Error('Please verify your email before logging in');
-        // }
-        
-        // Log warning if email not verified
+        // Check if email is verified
         if (!user.emailVerified) {
-          console.warn(`⚠️ User ${user.email} logging in without email verification`);
+          throw new Error('Please verify your email before logging in');
         }
 
         // Check if password exists (OAuth users might not have password)

@@ -154,11 +154,11 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get and verify user
-    const result = await getVerifiedUser(session.user.email);
-    if ('error' in result) {
-      return NextResponse.json({ error: result.error }, { status: result.status });
+    const userResult = await getVerifiedUser(session.user.email);
+    if ('error' in userResult) {
+      return NextResponse.json({ error: userResult.error }, { status: userResult.status });
     }
-    const { user } = result;
+    const { user } = userResult;
 
     // Fetch all user's saved links (to invalidate caches)
     const links = await prisma.link.findMany({
@@ -173,7 +173,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     // Delete all links in transaction
-    const result = await prisma.link.deleteMany({
+    const deleteResult = await prisma.link.deleteMany({
       where: {
         userId: user.id,
         isSaved: true,
@@ -190,10 +190,10 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       data: {
-        deleted: result.count,
+        deleted: deleteResult.count,
       },
       meta: {
-        message: `Successfully deleted ${result.count} link(s)`,
+        message: `Successfully deleted ${deleteResult.count} link(s)`,
       },
     });
   } catch (error) {

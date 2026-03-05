@@ -137,9 +137,15 @@ export async function POST(request: NextRequest) {
       // Log the error but don't fail the registration
       // User can request a new verification email later
       console.error('❌ Failed to send verification email:', emailError);
-      console.error('Error type:', emailError?.constructor?.name);
-      console.error('Error message:', emailError?.message);
-      console.error('Error stack:', emailError?.stack);
+      
+      if (emailError instanceof Error) {
+        console.error('Error type:', emailError.constructor.name);
+        console.error('Error message:', emailError.message);
+        console.error('Error stack:', emailError.stack);
+      } else {
+        console.error('Unknown error type:', typeof emailError);
+        console.error('Error value:', emailError);
+      }
       
       // Still return success - user is registered, just email failed
       console.warn('⚠️ User registered but email failed to send');

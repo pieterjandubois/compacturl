@@ -62,8 +62,8 @@ export default function RegisterPage() {
 
     try {
       await signIn('google', { callbackUrl: '/dashboard' })
-    } catch (err) {
-      setError('Failed to sign up with Google')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to sign up with Google')
       setLoading(false)
     }
   }

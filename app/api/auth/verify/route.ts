@@ -42,20 +42,50 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // If token not found, check if this is a duplicate verification (token already used)
     if (!verificationToken) {
-      // Check if user is already verified (duplicate request scenario)
-      console.log('🔍 Token not found, checking if user already verified...');
+      console.log('🔍 Token not found - checking if this is a duplicate verification...');
       
+      // Try to find any user with a recent verification
+      // This handles the case where the token was already used and deleted
       const allTokens = await prisma.verificationToken.findMany();
       console.log('Total tokens in database:', allTokens.length);
       
-      // This could be a duplicate request where the token was already used
+      // Since we can't identify which user this token was for, we can't verify
       // Return a helpful message
       return NextResponse.json(
         {
           error: {
             code: 'INVALID_TOKEN',
             message: 'Invalid or expired verification token. If you just verified your email, you can proceed to login.',
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check if token is expired FIRST (before checking if user is already verified)
+    const now = new Date();
+    const isExpired = verificationToken.expires < now;
+    console.log('Token expiration check:', {
+      now: now.toISOString(),
+      expires: verificationToken.expires.toISOString(),
+      isExpired
+    });
+    
+    if (isExpired) {
+      console.log('❌ Token expired');
+      
+      // Delete expired token
+      await prisma.verificationToken.delete({
+        where: { token },
+      });
+
+      return NextResponse.json(
+        {
+          error: {
+            code: 'TOKEN_EXPIRED',
+            message: 'Verification token has expired. Please register again.',
           },
         },
         { status: 400 }
@@ -87,34 +117,6 @@ export async function GET(request: NextRequest) {
           },
         },
         { status: 200 }
-      );
-    }
-
-    // Check if token is expired
-    const now = new Date();
-    const isExpired = verificationToken.expires < now;
-    console.log('Token expiration check:', {
-      now: now.toISOString(),
-      expires: verificationToken.expires.toISOString(),
-      isExpired
-    });
-    
-    if (isExpired) {
-      console.log('❌ Token expired');
-      
-      // Delete expired token
-      await prisma.verificationToken.delete({
-        where: { token },
-      });
-
-      return NextResponse.json(
-        {
-          error: {
-            code: 'TOKEN_EXPIRED',
-            message: 'Verification token has expired. Please register again.',
-          },
-        },
-        { status: 400 }
       );
     }
 

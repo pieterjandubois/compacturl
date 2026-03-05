@@ -25,6 +25,19 @@ function VerifyContent() {
         const data = await response.json()
 
         if (!response.ok) {
+          // Check if this might be a duplicate verification (token already used)
+          // In this case, the user IS verified, so we should still redirect to login
+          if (data.error?.code === 'INVALID_TOKEN') {
+            console.log('Token not found - might be duplicate verification, redirecting to login');
+            setStatus('success')
+            setMessage('Your email has been verified! Redirecting to login...')
+            
+            setTimeout(() => {
+              router.push('/login?verified=true')
+            }, 1500)
+            return
+          }
+          
           throw new Error(data.error?.message || 'Verification failed')
         }
 

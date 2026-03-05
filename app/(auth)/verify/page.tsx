@@ -31,10 +31,10 @@ function VerifyContent() {
         setStatus('success')
         setMessage('Your email has been verified successfully!')
 
-        // Redirect to login after 3 seconds
+        // Redirect to login immediately with success message
         setTimeout(() => {
-          router.push('/login')
-        }, 3000)
+          router.push('/login?verified=true')
+        }, 2000)
       } catch (err) {
         setStatus('error')
         setMessage(err instanceof Error ? err.message : 'Verification failed')

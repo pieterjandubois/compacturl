@@ -53,7 +53,16 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
         text: options.text,
       });
       console.log(`✅ Email sent successfully to ${options.to}`);
-      console.log('Email ID:', result.data?.id);
+      console.log('Resend response:', JSON.stringify(result, null, 2));
+      
+      if (result.data?.id) {
+        console.log('📧 Email ID:', result.data.id);
+        console.log('🔍 Check email status at: https://resend.com/emails/' + result.data.id);
+      }
+      
+      if (result.error) {
+        console.error('⚠️ Resend returned an error:', result.error);
+      }
     } catch (error) {
       console.error('❌ Failed to send email:', error);
       console.error('Error details:', JSON.stringify(error, null, 2));

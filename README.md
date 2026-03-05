@@ -79,7 +79,6 @@ CompactURL transforms long URLs into short, memorable links with smart naming ba
 **⚠️ Important Note:** Due to Resend's free tier limitations, only the email configured for the account's API key can receive verification emails. This means:
 
 - You can use the app anonymously without any restrictions
-- Registration/login is currently limited to the configured email address
-- All other features (URL shortening, QR codes, redirects) work for everyone
+- Registration/login is currently limited to the configured email address (no confirmation mail will be received for email addresses other than the Resend configured one.
 
 ---

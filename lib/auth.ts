@@ -119,34 +119,43 @@ export const authOptions: NextAuthOptions = {
         });
       }
       
-      // Refresh user data from database on update trigger or if not verified
-      // This ensures emailVerified status is always current
-      // Also refresh every 5 minutes to catch any updates
-      const now = Date.now();
-      const lastRefresh = (token.lastRefresh as number) || 0;
-      const shouldRefresh = trigger === 'update' || !token.emailVerified || (now - lastRefresh > 5 * 60 * 1000);
-      
-      if (shouldRefresh && token.id) {
-        console.log('JWT callback - Refreshing user data from database for:', token.id, {
-          reason: trigger === 'update' ? 'update trigger' : !token.emailVerified ? 'not verified' : 'periodic refresh',
-          timeSinceLastRefresh: now - lastRefresh
-        });
+      // ALWAYS refresh user data from database to ensure we have the latest emailVerified status
+      // This prevents race conditions where the token is created before database replication
+      if (token.id) {
+        const now = Date.now();
+        const lastRefresh = (token.lastRefresh as number) || 0;
         
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { emailVerified: true, email: true, name: true }
-        });
+        // Refresh on:
+        // 1. Update trigger (explicit refresh)
+        // 2. First time (no lastRefresh set)
+        // 3. Every 1 minute (to catch any updates)
+        const shouldRefresh = trigger === 'update' || lastRefresh === 0 || (now - lastRefresh > 60 * 1000);
         
-        if (dbUser) {
-          token.emailVerified = dbUser.emailVerified;
-          token.email = dbUser.email;
-          token.name = dbUser.name;
-          token.lastRefresh = now;
-          console.log('JWT callback - Updated token with fresh data:', {
-            emailVerified: token.emailVerified,
-            email: token.email,
-            timestamp: new Date().toISOString()
+        if (shouldRefresh) {
+          console.log('JWT callback - Refreshing user data from database for:', token.id, {
+            reason: trigger === 'update' ? 'update trigger' : lastRefresh === 0 ? 'first time' : 'periodic refresh (1 min)',
+            timeSinceLastRefresh: now - lastRefresh
           });
+          
+          // Fetch fresh user data from database
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { emailVerified: true, email: true, name: true }
+          });
+          
+          if (dbUser) {
+            token.emailVerified = dbUser.emailVerified;
+            token.email = dbUser.email;
+            token.name = dbUser.name;
+            token.lastRefresh = now;
+            console.log('JWT callback - Updated token with fresh data:', {
+              emailVerified: token.emailVerified,
+              email: token.email,
+              timestamp: new Date().toISOString()
+            });
+          } else {
+            console.warn('JWT callback - User not found in database:', token.id);
+          }
         }
       }
       

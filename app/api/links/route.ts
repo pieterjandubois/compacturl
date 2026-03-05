@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client';
 
 /**
  * Helper function to get and verify user
+ * Includes retry logic to handle race conditions where emailVerified might not be updated yet
  */
 async function getVerifiedUser(email: string) {
   const user = await prisma.user.findUnique({
@@ -21,8 +22,35 @@ async function getVerifiedUser(email: string) {
     return { error: { code: 'USER_NOT_FOUND', message: 'User not found' }, status: 404 };
   }
 
+  // If email is not verified, try again with retries
+  // This handles the race condition where verification just completed but database hasn't replicated yet
   if (!user.emailVerified) {
-    console.log('❌ Email not verified for user:', user.email);
+    console.log('⚠️ Email not verified for user:', user.email, '- attempting retry...');
+    
+    // Retry up to 5 times with 200ms delays (max 1 second total)
+    let retryAttempts = 0;
+    const maxRetries = 5;
+    const delayMs = 200;
+    
+    while (retryAttempts < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      retryAttempts++;
+      
+      console.log(`🔄 Retry ${retryAttempts}/${maxRetries} - checking emailVerified status...`);
+      
+      const retryUser = await prisma.user.findUnique({
+        where: { email },
+        select: { emailVerified: true }
+      });
+      
+      if (retryUser?.emailVerified) {
+        console.log('✅ Email verified confirmed on retry attempt', retryAttempts);
+        return { user: { ...user, emailVerified: retryUser.emailVerified } };
+      }
+    }
+    
+    // After all retries, still not verified
+    console.log('❌ Email not verified for user after retries:', user.email);
     return { 
       error: { 
         code: 'EMAIL_NOT_VERIFIED', 

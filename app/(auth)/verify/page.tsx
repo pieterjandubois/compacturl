@@ -95,7 +95,7 @@ function VerifyContent() {
                   Verifying your email...
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Please wait while we verify your email address.
+                  Please wait while we verify your email address and confirm the update in our database.
                 </p>
               </>
             )}

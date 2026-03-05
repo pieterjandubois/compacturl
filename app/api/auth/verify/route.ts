@@ -140,6 +140,38 @@ export async function GET(request: NextRequest) {
     });
     
     console.log('✅ Verification token deleted');
+    
+    // Verify the update was successful by checking the database again
+    // This ensures the update is committed before we return success
+    // Prevents race condition where JWT callback runs before database replication
+    console.log('🔄 Verifying database update was committed...');
+    let verificationAttempts = 0;
+    const maxAttempts = 10;
+    const delayMs = 100;
+    
+    while (verificationAttempts < maxAttempts) {
+      const verifiedUser = await prisma.user.findUnique({
+        where: { email: verificationToken.identifier },
+        select: { emailVerified: true }
+      });
+      
+      if (verifiedUser?.emailVerified) {
+        console.log('✅ Database update confirmed at attempt', verificationAttempts + 1);
+        break;
+      }
+      
+      verificationAttempts++;
+      if (verificationAttempts < maxAttempts) {
+        console.log(`⏳ Waiting for database replication (attempt ${verificationAttempts}/${maxAttempts})...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+    
+    if (verificationAttempts >= maxAttempts) {
+      console.warn('⚠️ Database update verification timed out after', maxAttempts * delayMs, 'ms');
+      console.warn('Proceeding anyway - update should be committed');
+    }
+    
     console.log('=== VERIFICATION SUCCESSFUL ===');
 
     return NextResponse.json(

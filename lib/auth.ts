@@ -111,16 +111,27 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.emailVerified = user.emailVerified;
+        token.lastRefresh = Date.now();
         console.log('JWT callback - Added user data to token:', {
           userId: user.id,
-          emailVerified: user.emailVerified
+          emailVerified: user.emailVerified,
+          timestamp: new Date().toISOString()
         });
       }
       
-      // Refresh user data from database on update trigger or periodically
+      // Refresh user data from database on update trigger or if not verified
       // This ensures emailVerified status is always current
-      if (trigger === 'update' || !token.emailVerified) {
-        console.log('JWT callback - Refreshing user data from database for:', token.id);
+      // Also refresh every 5 minutes to catch any updates
+      const now = Date.now();
+      const lastRefresh = (token.lastRefresh as number) || 0;
+      const shouldRefresh = trigger === 'update' || !token.emailVerified || (now - lastRefresh > 5 * 60 * 1000);
+      
+      if (shouldRefresh && token.id) {
+        console.log('JWT callback - Refreshing user data from database for:', token.id, {
+          reason: trigger === 'update' ? 'update trigger' : !token.emailVerified ? 'not verified' : 'periodic refresh',
+          timeSinceLastRefresh: now - lastRefresh
+        });
+        
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: { emailVerified: true, email: true, name: true }
@@ -130,9 +141,11 @@ export const authOptions: NextAuthOptions = {
           token.emailVerified = dbUser.emailVerified;
           token.email = dbUser.email;
           token.name = dbUser.name;
+          token.lastRefresh = now;
           console.log('JWT callback - Updated token with fresh data:', {
             emailVerified: token.emailVerified,
-            email: token.email
+            email: token.email,
+            timestamp: new Date().toISOString()
           });
         }
       }
